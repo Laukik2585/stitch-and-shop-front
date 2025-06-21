@@ -1,13 +1,38 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { useState } from "react";
+import { BrowserRouter as Router } from "react-router-dom";
+import Header from "@/components/Header";
+import ProductGrid from "@/components/ProductGrid";
+import Cart from "@/components/Cart";
+import Checkout from "@/components/Checkout";
+import OrderTracking from "@/components/OrderTracking";
+import { CartProvider } from "@/contexts/CartContext";
 
 const Index = () => {
+  const [currentView, setCurrentView] = useState("catalog");
+
+  const renderView = () => {
+    switch (currentView) {
+      case "cart":
+        return <Cart onContinueShopping={() => setCurrentView("catalog")} onCheckout={() => setCurrentView("checkout")} />;
+      case "checkout":
+        return <Checkout onBack={() => setCurrentView("cart")} onOrderComplete={() => setCurrentView("tracking")} />;
+      case "tracking":
+        return <OrderTracking onBackToCatalog={() => setCurrentView("catalog")} />;
+      default:
+        return <ProductGrid />;
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <CartProvider>
+      <div className="min-h-screen bg-stone-50">
+        <Header currentView={currentView} onViewChange={setCurrentView} />
+        <main className="pt-20">
+          {renderView()}
+        </main>
       </div>
-    </div>
+    </CartProvider>
   );
 };
 
