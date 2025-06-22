@@ -6,7 +6,6 @@ import ProductGrid from "@/components/ProductGrid";
 import Cart from "@/components/Cart";
 import Checkout from "@/components/Checkout";
 import OrderTracking from "@/components/OrderTracking";
-import { CartProvider } from "@/contexts/CartContext";
 
 const Index = () => {
   const [currentView, setCurrentView] = useState("catalog");
@@ -25,14 +24,12 @@ const Index = () => {
   };
 
   return (
-    <CartProvider>
-      <div className="min-h-screen bg-stone-50">
-        <Header currentView={currentView} onViewChange={setCurrentView} />
-        <main className="pt-20">
-          {renderView()}
-        </main>
-      </div>
-    </CartProvider>
+    <div className="min-h-screen bg-stone-50">
+      <Header currentView={currentView} onViewChange={setCurrentView} />
+      <main className="pt-20">
+        {renderView()}
+      </main>
+    </div>
   );
 };
 
