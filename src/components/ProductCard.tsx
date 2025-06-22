@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "@/hooks/use-toast";
 
@@ -24,7 +25,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || "");
   const [isHovered, setIsHovered] = useState(false);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation when clicking add to cart
     dispatch({
       type: "ADD_ITEM",
       payload: {
@@ -46,8 +48,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
   };
 
   return (
-    <div 
-      className="group cursor-pointer transition-all duration-300"
+    <Link 
+      to={`/product/${product.id}`}
+      className="group cursor-pointer transition-all duration-300 block"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -82,7 +85,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
               {product.colors.map((color) => (
                 <button
                   key={color}
-                  onClick={() => setSelectedColor(color)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setSelectedColor(color);
+                  }}
                   className={`px-3 py-1 text-xs border rounded-sm transition-colors ${
                     selectedColor === color
                       ? "border-stone-800 bg-stone-800 text-white"
@@ -103,7 +109,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
               {product.sizes.map((size) => (
                 <button
                   key={size}
-                  onClick={() => setSelectedSize(size)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setSelectedSize(size);
+                  }}
                   className={`px-3 py-1 text-xs border rounded-sm transition-colors ${
                     selectedSize === size
                       ? "border-stone-800 bg-stone-800 text-white"
@@ -124,7 +133,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           ADD TO CART
         </button>
       </div>
-    </div>
+    </Link>
   );
 };
 
