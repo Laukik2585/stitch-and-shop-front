@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CheckoutProps {
   onBack: () => void;
@@ -18,10 +19,8 @@ const Checkout = ({ onBack, onOrderComplete }: CheckoutProps) => {
     city: "",
     state: "",
     zipCode: "",
-    cardNumber: "",
-    expiryDate: "",
-    cvv: ""
   });
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -30,27 +29,46 @@ const Checkout = ({ onBack, onOrderComplete }: CheckoutProps) => {
     });
   };
 
+  const handleStripeCheckout = async () => {
+    setLoading(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: {
+          items: state.items,
+          total: state.total
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.url) {
+        // Open Stripe checkout in a new tab
+        window.open(data.url, '_blank');
+        
+        toast({
+          title: "Redirecting to payment",
+          description: "Please complete your payment in the new tab.",
+        });
+      }
+
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast({
+        title: "Payment failed",
+        description: "There was an error processing your payment. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Simulate order processing
-    setTimeout(() => {
-      dispatch({ type: "CLEAR_CART" });
-      localStorage.setItem("lastOrder", JSON.stringify({
-        orderId: `AT${Date.now()}`,
-        items: state.items,
-        total: state.total,
-        date: new Date().toISOString(),
-        status: "confirmed"
-      }));
-      
-      toast({
-        title: "Order confirmed!",
-        description: "Thank you for your purchase. You'll receive a confirmation email shortly.",
-      });
-      
-      onOrderComplete();
-    }, 2000);
+    handleStripeCheckout();
   };
 
   return (
@@ -137,39 +155,10 @@ const Checkout = ({ onBack, onOrderComplete }: CheckoutProps) => {
 
             <div>
               <h2 className="text-xl font-light text-stone-800 mb-4">Payment</h2>
-              <div className="p-4 bg-amber-50 border border-amber-200 rounded-sm mb-4">
-                <p className="text-sm text-amber-800">
-                  🔒 Stripe integration will be added here. For now, this is a demo checkout.
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-sm mb-4">
+                <p className="text-sm text-blue-800">
+                  🔒 Secure payment powered by Stripe. Click "Complete Order" to proceed to secure checkout.
                 </p>
-              </div>
-              <input
-                type="text"
-                name="cardNumber"
-                placeholder="Card number"
-                required
-                value={formData.cardNumber}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-stone-300 rounded-sm focus:ring-1 focus:ring-stone-500 focus:border-stone-500 outline-none mb-4"
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  name="expiryDate"
-                  placeholder="MM/YY"
-                  required
-                  value={formData.expiryDate}
-                  onChange={handleInputChange}
-                  className="px-4 py-3 border border-stone-300 rounded-sm focus:ring-1 focus:ring-stone-500 focus:border-stone-500 outline-none"
-                />
-                <input
-                  type="text"
-                  name="cvv"
-                  placeholder="CVV"
-                  required
-                  value={formData.cvv}
-                  onChange={handleInputChange}
-                  className="px-4 py-3 border border-stone-300 rounded-sm focus:ring-1 focus:ring-stone-500 focus:border-stone-500 outline-none"
-                />
               </div>
             </div>
 
@@ -183,9 +172,10 @@ const Checkout = ({ onBack, onOrderComplete }: CheckoutProps) => {
               </button>
               <button
                 type="submit"
-                className="flex-1 py-3 bg-stone-800 text-white text-sm tracking-wide transition-colors hover:bg-stone-700 rounded-sm"
+                disabled={loading}
+                className="flex-1 py-3 bg-stone-800 text-white text-sm tracking-wide transition-colors hover:bg-stone-700 rounded-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                COMPLETE ORDER
+                {loading ? 'PROCESSING...' : 'COMPLETE ORDER'}
               </button>
             </div>
           </form>
