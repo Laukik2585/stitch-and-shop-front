@@ -6,7 +6,10 @@ import ProductCard from "@/components/ProductCard";
 import ProductFilters from "@/components/ProductFilters";
 import SearchBar from "@/components/SearchBar";
 import Header from "@/components/Header";
+import Cart from "@/components/Cart";
+import Checkout from "@/components/Checkout";
 import { useProducts, useCategories } from "@/hooks/useProducts";
+import { toast } from "@/hooks/use-toast";
 
 const Products = () => {
   const { user, loading: authLoading } = useAuth();
@@ -15,6 +18,7 @@ const Products = () => {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [currentView, setCurrentView] = useState("catalog");
 
   const { data: products = [], isLoading: productsLoading, error: productsError } = useProducts();
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
@@ -34,7 +38,7 @@ const Products = () => {
   if (productsLoading || categoriesLoading) {
     return (
       <div className="min-h-screen bg-stone-50">
-        <Header />
+        <Header currentView={currentView} onViewChange={setCurrentView} />
         <div className="pt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
             <div className="text-lg text-stone-600">Loading products...</div>
@@ -47,7 +51,7 @@ const Products = () => {
   if (productsError) {
     return (
       <div className="min-h-screen bg-stone-50">
-        <Header />
+        <Header currentView={currentView} onViewChange={setCurrentView} />
         <div className="pt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
             <div className="text-lg text-red-600">Error loading products. Please try again.</div>
@@ -106,9 +110,46 @@ const Products = () => {
     });
   }, [products, categories, selectedCategory, searchQuery, priceRange, selectedColors, selectedSizes]);
 
+  const handleOrderComplete = () => {
+    toast({
+      title: "Order completed!",
+      description: "Thank you for your purchase. You will receive a confirmation email shortly.",
+    });
+    setCurrentView("catalog");
+  };
+
+  // Render different views based on currentView state
+  if (currentView === "cart") {
+    return (
+      <div className="min-h-screen bg-stone-50">
+        <Header currentView={currentView} onViewChange={setCurrentView} />
+        <div className="pt-20">
+          <Cart 
+            onContinueShopping={() => setCurrentView("catalog")}
+            onCheckout={() => setCurrentView("checkout")}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (currentView === "checkout") {
+    return (
+      <div className="min-h-screen bg-stone-50">
+        <Header currentView={currentView} onViewChange={setCurrentView} />
+        <div className="pt-20">
+          <Checkout 
+            onBack={() => setCurrentView("cart")}
+            onOrderComplete={handleOrderComplete}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-stone-50">
-      <Header />
+      <Header currentView={currentView} onViewChange={setCurrentView} />
       <main className="pt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center mb-12">

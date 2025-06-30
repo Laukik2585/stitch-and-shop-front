@@ -22,9 +22,10 @@ const Header = ({ currentView, onViewChange }: HeaderProps) => {
   const handleCartClick = () => {
     if (onViewChange) {
       onViewChange("cart");
+    } else {
+      // If no onViewChange prop, navigate to products page and let cart be handled there
+      navigate("/products");
     }
-    // If no onViewChange prop, we're in the router-based navigation
-    // Cart functionality will be handled by the cart context
   };
 
   const handleLogoClick = () => {
@@ -55,14 +56,6 @@ const Header = ({ currentView, onViewChange }: HeaderProps) => {
                 }`}
               >
                 CATALOG
-              </button>
-              <button 
-                onClick={() => onViewChange("tracking")}
-                className={`text-sm tracking-wide transition-colors ${
-                  currentView === "tracking" ? "text-stone-800 border-b border-stone-800" : "text-stone-600 hover:text-stone-800"
-                }`}
-              >
-                TRACK ORDER
               </button>
             </nav>
           ) : (
