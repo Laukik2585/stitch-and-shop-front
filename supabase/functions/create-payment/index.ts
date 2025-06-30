@@ -34,8 +34,8 @@ serve(async (req) => {
     console.log('User authenticated:', user.email);
 
     // Parse request body
-    const { items, total } = await req.json();
-    console.log('Payment request:', { items, total });
+    const { items, total, customerInfo } = await req.json();
+    console.log('Payment request:', { items, total, customerInfo });
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -73,10 +73,11 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: lineItems,
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/products?payment=success`,
+      success_url: `${req.headers.get("origin")}/products?payment=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/products?payment=canceled`,
       metadata: {
         user_id: user.id,
+        customer_info: JSON.stringify(customerInfo),
       },
     });
 
@@ -106,7 +107,7 @@ serve(async (req) => {
       console.log('Order stored successfully');
     }
 
-    return new Response(JSON.stringify({ url: session.url }), {
+    return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

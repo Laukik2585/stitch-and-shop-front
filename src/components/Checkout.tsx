@@ -1,8 +1,8 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useSearchParams } from "react-router-dom";
 
 interface CheckoutProps {
   onBack: () => void;
@@ -11,6 +11,7 @@ interface CheckoutProps {
 
 const Checkout = ({ onBack, onOrderComplete }: CheckoutProps) => {
   const { state, dispatch } = useCart();
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     email: "",
     firstName: "",
@@ -21,6 +22,45 @@ const Checkout = ({ onBack, onOrderComplete }: CheckoutProps) => {
     zipCode: "",
   });
   const [loading, setLoading] = useState(false);
+
+  // Check for successful payment on component mount
+  useEffect(() => {
+    const checkPaymentSuccess = async () => {
+      const sessionId = searchParams.get('session_id');
+      const paymentStatus = searchParams.get('payment');
+      
+      if (sessionId && paymentStatus === 'success') {
+        console.log('Verifying payment for session:', sessionId);
+        
+        try {
+          const { data, error } = await supabase.functions.invoke('verify-payment', {
+            body: { sessionId }
+          });
+
+          if (error) {
+            console.error('Payment verification error:', error);
+            return;
+          }
+
+          if (data?.success) {
+            // Clear cart
+            dispatch({ type: "CLEAR_CART" });
+            
+            toast({
+              title: "Payment successful!",
+              description: "Thank you for your purchase. A confirmation email has been sent to you.",
+            });
+            
+            onOrderComplete();
+          }
+        } catch (error) {
+          console.error('Error verifying payment:', error);
+        }
+      }
+    };
+
+    checkPaymentSuccess();
+  }, [searchParams, dispatch, onOrderComplete]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -36,7 +76,8 @@ const Checkout = ({ onBack, onOrderComplete }: CheckoutProps) => {
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
           items: state.items,
-          total: state.total
+          total: state.total,
+          customerInfo: formData
         }
       });
 
@@ -158,6 +199,9 @@ const Checkout = ({ onBack, onOrderComplete }: CheckoutProps) => {
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-sm mb-4">
                 <p className="text-sm text-blue-800">
                   🔒 Secure payment powered by Stripe. Click "Complete Order" to proceed to secure checkout.
+                </p>
+                <p className="text-xs text-blue-600 mt-2">
+                  After completing payment, you'll receive a confirmation email with your order details.
                 </p>
               </div>
             </div>
